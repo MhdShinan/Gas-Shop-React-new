@@ -1,0 +1,94 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@fortawesome/fontawesome-free": "^6.7.1",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@fortawesome/react-fontawesome": "^0.2.2",
+    "@mui/icons-material": "^6.2.1",
+    "@mui/material": "^6.3.0",
+    "@ngrok/ngrok": "^1.4.1",
+    "@react-login-page/page6": "^1.0.4",
+    "@react-three/drei": "^9.120.4",
+    "@react-three/fiber": "^8.17.10",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.2.1",
+    "aos": "^2.3.4",
+    "assert": "^2.1.0",
+    "axios": "^1.7.9",
+    "bootstrap": "^5.3.3",
+    "browserify-zlib": "^0.2.0",
+    "cra-template": "1.2.0",
+    "dotenv": "^16.4.7",
+    "font-awesome": "^4.7.0",
+    "framer-motion": "^11.15.0",
+    "frontend": "file:",
+    "hamburger-react": "^2.5.1",
+    "https-browserify": "^1.0.0",
+    "intl-tel-input": "^25.2.0",
+    "lucide-react": "^0.469.0",
+    "react": "^18.3.1",
+    "react-bootstrap": "^2.10.7",
+    "react-countup": "^6.5.3",
+    "react-custom-scrollbars-2": "^4.5.0",
+    "react-dom": "^18.3.1",
+    "react-fast-marquee": "^1.6.5",
+    "react-hot-toast": "^2.4.1",
+    "react-icons": "^5.4.0",
+    "react-intersection-observer": "^9.13.1",
+    "react-modal": "^3.16.3",
+    "react-notifications-component": "^4.0.1",
+    "react-phone-number-input": "^3.4.10",
+    "react-pro-sidebar": "^1.1.0",
+    "react-router-dom": "^7.0.2",
+    "react-scripts": "5.0.1",
+    "react-slick": "^0.30.3",
+    "react-star-ratings": "^2.3.0",
+    "react-tabs": "^6.1.0",
+    "react-toastify": "^11.0.3",
+    "slick-carousel": "^1.8.1",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "styled-components": "^6.1.13",
+    "sweetalert2": "^11.15.10",
+    "swiper": "^11.1.15",
+    "tailwind-scrollbar-hide": "^1.1.7",
+    "tailwindcss": "^3.4.17",
+    "typewriter-effect": "^2.21.0",
+    "url": "^0.11.4",
+    "util": "^0.12.5",
+    "web-vitals": "^2.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "source-map-explorer": "^2.5.3"
+  }
+}
