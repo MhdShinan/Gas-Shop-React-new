@@ -22,9 +22,12 @@ import {
   Person,
   DirectionsCar,
   DirectionsWalk,
+  Search
 } from "@mui/icons-material";
 
-const AdvancedOrderForm = () => {
+
+
+const AdvancedOrderForm = ({ closeOverlay }) => {
   const [formState, setFormState] = useState({
     step: "initial",
     buyType: "",
@@ -85,6 +88,7 @@ const AdvancedOrderForm = () => {
       >
         Buy for a Friend
       </Button>
+
       <Button
         fullWidth
         variant="contained"
@@ -201,8 +205,15 @@ const AdvancedOrderForm = () => {
 
   const renderBuyForMeForm = () => (
     <div className="space-y-4">
-      {renderFormField("Name", "name", "text", "Your Name")}
       {renderFormField("Email", "email", "email", "Your Email")}
+      <Button
+        fullWidth
+        variant="contained"
+        color="primary"
+      >
+        Search
+      </Button>
+      {renderFormField("Name", "name", "text", "Your Name")}
       {renderFormField("Number", "number", "tel", "Your Phone Number")}
       {renderFormField("Address", "address", "text", "Your Address")}
       {renderFormField("Landmarks", "landmarks", "text", "Nearby Landmarks")}
@@ -248,8 +259,11 @@ const AdvancedOrderForm = () => {
 <br/>
 const renderCloseButton = () => (
   <IconButton
-    onClick={resetForm}
-    style={{ position: "absolute", top: 8, right: 8 }}
+    onClick={() => {
+      console.log("Close button clicked");
+      closeOverlay(); // This closes the overlay
+    }}
+    style={{ position: "absolute", top: "10px", right: "10px" }}
   >
     <Close />
   </IconButton>
@@ -285,13 +299,13 @@ const renderCloseButton = () => (
           title={<Typography variant="h6">{formState.buyType || "Order Form"}</Typography>}
         />
         <CardContent>
-          {renderCloseButton()}
-          {formState.step !== "initial" && renderBackButton()}
-          {formState.step === "initial" && renderInitialStep()}
-          {formState.step === "buyToFriend" && renderBuyToFriendForm()}
-          {formState.step === "buyForMe" && renderBuyForMeForm()}
-          {formState.step === "otp" && renderOtpStep()}
-        </CardContent>
+        {renderCloseButton()} {/* Ensure the close button is rendered */}
+        {formState.step !== "initial" && renderBackButton()}
+        {formState.step === "initial" && renderInitialStep()}
+        {formState.step === "buyToFriend" && renderBuyToFriendForm()}
+        {formState.step === "buyForMe" && renderBuyForMeForm()}
+        {formState.step === "otp" && renderOtpStep()}
+      </CardContent>
       </Card>
     </div>
   );

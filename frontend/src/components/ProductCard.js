@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { BsCart4 } from "react-icons/bs";
-import logo from "../assets/images/1.png";
+import { Close } from "@mui/icons-material";
 import Small from "../assets/Gas/4.png";
 import Medium from "../assets/Gas/3.png";
 import Large from "../assets/Gas/2.png";
 import xLarge from "../assets/Gas/1.png";
-import Form from "./AdvancedOrderForm"; 
 
-// Combined component ProductCard
 export default function ProductCard() {
+  const [showFormOverlay] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
 
-  const [isReadyToPurchase] = useState(false);
+  
   const products = [
     {
       title: "Small",
@@ -20,6 +19,7 @@ export default function ProductCard() {
       size: "2.5 kg",
       description: "Perfect for small households and occasional use",
       price: "$25.99",
+      Stock: "10"
     },
     {
       title: "Medium",
@@ -27,6 +27,7 @@ export default function ProductCard() {
       size: "5.5 kg",
       description: "Ideal for regular home cooking needs",
       price: "$45.99",
+      Stock: "10"
     },
     {
       title: "Large",
@@ -34,6 +35,7 @@ export default function ProductCard() {
       size: "12.5 kg",
       description: "Great for large families and frequent cooking",
       price: "$75.99",
+      Stock: "10"
     },
     {
       title: "Extra Large",
@@ -41,26 +43,28 @@ export default function ProductCard() {
       size: "45 kg",
       description: "Best for commercial use and heavy consumption",
       price: "$149.99",
+      Stock: "10"
     },
   ];
 
   useEffect(() => {
-    if (showDeliveryForm) {
+    if (showDeliveryForm || showFormOverlay) {
       document.body.style.overflow = "hidden"; // Disable scrolling
     } else {
       document.body.style.overflow = ""; // Enable scrolling
     }
 
-    // Cleanup function
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showDeliveryForm]);
+  }, [showDeliveryForm, showFormOverlay]);
 
   const handleOrderClick = (product) => {
     setSelectedProduct(product);
     setShowDeliveryForm(true);
   };
+
+
   return (
     <div className="w-full min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
@@ -85,7 +89,6 @@ export default function ProductCard() {
                   />
                 </div>
               </div>
-              <br/>
               <button
                 className="flex items-center gap-2 bg-[#0685F5] text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
                 onClick={() => handleOrderClick(product)}
@@ -100,22 +103,10 @@ export default function ProductCard() {
 
       {/* Delivery Form Modal */}
       {showDeliveryForm && selectedProduct && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center p-4 z-50">
-          <div
-            className={`w-[600px] h-[500px] rounded-lg p-6 overflow-y-auto ${
-              isReadyToPurchase ? "bg-white" : "bg-white"
-            }`}
-          >
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex
+         justify-center items-center p-4 z-50">
+          <div className="w-[250px] h-[400px] rounded-lg p-6 overflow-y-auto bg-white">
             <div className="space-y-4">
-              <div className="flex justify-center items-center mb-6 bg-blue-500 rounded-lg p-4">
-                <img
-                  src={logo}
-                  alt="Uwais & Sons"
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-
-              {/* Product Details */}
               <div className="text-center mb-6">
                 <img
                   src={selectedProduct.image}
@@ -124,15 +115,16 @@ export default function ProductCard() {
                 />
                 <h3 className="text-2xl font-bold">{selectedProduct.title}</h3>
                 <p className="text-xl font-semibold mt-4">
-                  {selectedProduct.price}
+                  Price:{selectedProduct.price}<br/>
+                  Stock:{selectedProduct.Stock}
                 </p>
-              </div>          
-              {/* Action Buttons */}
+              </div>
               <button
-                className="flex items-center gap-2 bg-[#0685F5] text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                className="flex items-center gap-2 bg-red-500 text-white px-16 py-3 rounded-lg hover:bg-red-700 transition-colors"
+                onClick={() => setShowDeliveryForm(false)}
               >
-                <BsCart4 className="text-xl" />
-                Order Now
+                <Close className="text-xl" />
+                Close
               </button>
             </div>
           </div>
