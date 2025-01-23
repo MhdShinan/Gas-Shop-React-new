@@ -8,10 +8,10 @@ import ProductGrid from './components/Product';
 import Hero from './components/Hero';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-import Login from './components/Login';
+import AdvancedAdmin from './components/AdvancedAdmin';
 import Sighnin from './components/Sighnin';
 import FloatingButtons from './components/FloatingButtons';
-import AdvancedOrderForm from './components/AdvancedOrderForm';
+import AdvancedOrderForm from './components/NewAdmin';
 
 // import SettingsPage from './components/SettingsPage';
 
@@ -67,6 +67,7 @@ function App() {
                 element={
                   <>
                     <Header />
+                    <br />
                     <Hero />
                     <br />
                     <Whychoose />
@@ -79,7 +80,7 @@ function App() {
                 }
               />
               <Route path="/Order-form" element={<OrderForm />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<AdvancedAdmin />} />
               <Route path="/sign-in" element={<Navigate to="/" replace />} />
               {/* <Route path='/settings' element={<SettingsPage />}/> */}
               <Route path='/form' element={<AdvancedOrderForm />}/>

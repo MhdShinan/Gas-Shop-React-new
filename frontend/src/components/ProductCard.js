@@ -1,54 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { BsCart4 } from "react-icons/bs";
+import { BsClipboard2Data } from "react-icons/bs";
 import { Close } from "@mui/icons-material";
-import Small from "../assets/Gas/4.png";
-import Medium from "../assets/Gas/3.png";
-import Large from "../assets/Gas/2.png";
-import xLarge from "../assets/Gas/1.png";
 
 export default function ProductCard() {
-  const [showFormOverlay] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
 
-  
-  const products = [
-    {
-      title: "Small",
-      image: Small,
-      size: "2.5 kg",
-      description: "Perfect for small households and occasional use",
-      price: "$25.99",
-      Stock: "10"
-    },
-    {
-      title: "Medium",
-      image: Medium,
-      size: "5.5 kg",
-      description: "Ideal for regular home cooking needs",
-      price: "$45.99",
-      Stock: "10"
-    },
-    {
-      title: "Large",
-      image: Large,
-      size: "12.5 kg",
-      description: "Great for large families and frequent cooking",
-      price: "$75.99",
-      Stock: "10"
-    },
-    {
-      title: "Extra Large",
-      image: xLarge,
-      size: "45 kg",
-      description: "Best for commercial use and heavy consumption",
-      price: "$149.99",
-      Stock: "10"
-    },
-  ];
+  // Fetch products from the backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/products");
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+        const data = await response.json();
+        setProducts(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
-    if (showDeliveryForm || showFormOverlay) {
+    if (showDeliveryForm) {
       document.body.style.overflow = "hidden"; // Disable scrolling
     } else {
       document.body.style.overflow = ""; // Enable scrolling
@@ -57,13 +39,15 @@ export default function ProductCard() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showDeliveryForm, showFormOverlay]);
+  }, [showDeliveryForm]);
 
   const handleOrderClick = (product) => {
     setSelectedProduct(product);
     setShowDeliveryForm(true);
   };
 
+  if (loading) return <div>Loading products...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="w-full min-h-screen p-8">
@@ -93,8 +77,8 @@ export default function ProductCard() {
                 className="flex items-center gap-2 bg-[#0685F5] text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
                 onClick={() => handleOrderClick(product)}
               >
-                <BsCart4 className="text-xl" />
-                Order Now
+                <BsClipboard2Data className="text-xl" />
+                Details
               </button>
             </div>
           ))}
@@ -103,9 +87,8 @@ export default function ProductCard() {
 
       {/* Delivery Form Modal */}
       {showDeliveryForm && selectedProduct && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex
-         justify-center items-center p-4 z-50">
-          <div className="w-[250px] h-[400px] rounded-lg p-6 overflow-y-auto bg-white">
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center p-4 z-50">
+          <div className="w-[250px] h-[450px] rounded-lg p-6 overflow-y-auto bg-white">
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <img
@@ -115,8 +98,9 @@ export default function ProductCard() {
                 />
                 <h3 className="text-2xl font-bold">{selectedProduct.title}</h3>
                 <p className="text-xl font-semibold mt-4">
-                  Price:{selectedProduct.price}<br/>
-                  Stock:{selectedProduct.Stock}
+                  Price: {selectedProduct.price}
+                  <br />
+                  Stock: {selectedProduct.stock}
                 </p>
               </div>
               <button

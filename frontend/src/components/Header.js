@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { FiUser, FiShoppingCart, FiClock, FiSettings, FiLogOut } from "react-icons/fi";
+import React, { useState} from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FiUser,
+  FiShoppingCart,
+  FiClock,
+  FiSettings,
+  FiLogOut,
+} from "react-icons/fi";
 import { BsBell } from "react-icons/bs";
 import logo from "../assets/images/download (1).png";
 import brand from "../assets/images/1.png";
@@ -7,6 +14,7 @@ import SweetAlert from "sweetalert2";
 import Form from "./AdvancedOrderForm"; // Import the Form component
 
 const Header = () => {
+  const navigate = useNavigate(); 
   const [currentTime, setCurrentTime] = React.useState("");
   const [currentDate, setCurrentDate] = React.useState("");
   const [isFormOpen, setIsFormOpen] = useState(false); // State to control modal visibility
@@ -28,7 +36,7 @@ const Header = () => {
       cancelButtonText: "Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
-        window.location.href = "/login";
+        window.location.href = "/sign-in";
       }
     });
   };
@@ -63,12 +71,20 @@ const Header = () => {
         <div className="flex flex-col md:flex-row items-center justify-between py-2">
           {/* Logo Section */}
           <div className="w-[100px] h-[100px] bg-white rounded-lg flex items-center justify-center">
-            <img src={logo} alt="Litro Gas Logo" className="w-20 h-20 object-contain" />
+            <img
+              src={logo}
+              alt="Litro Gas Logo"
+              className="w-20 h-20 object-contain"
+            />
           </div>
 
           {/* Brand Section */}
           <div className="flex-1 flex flex-col items-center mt-2 md:mt-0">
-            <img src={brand} alt="Litro Gas Brand" className="px-20 w-70 h-20 object-contain" />
+            <img
+              src={brand}
+              alt="Litro Gas Brand"
+              className="px-20 w-70 h-20 object-contain"
+            />
           </div>
 
           <div className="flex flex-col items-end gap-2 mt-4 md:mt-0">
@@ -97,7 +113,10 @@ const Header = () => {
             {/* Second Row: Admin and Date & Time */}
             <div className="flex items-center justify-between gap-4 mt-2">
               {userEmail === adminEmail && (
-                <button className="flex items-center gap-2 bg-white/10 px-4 py-1 rounded hover:bg-white/20 shadow-md transition-all">
+                <button
+                  className="flex items-center gap-2 bg-white/10 px-4 py-1 rounded hover:bg-white/20 shadow-md transition-all"
+                  onClick={() => navigate("/admin")} // Navigate to /admin on click
+                >
                   <FiUser className="w-5 h-5" />
                   Admin
                 </button>
@@ -129,13 +148,13 @@ const Header = () => {
 
       {/* Modal Overlay */}
       {isFormOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-      <Form closeOverlay={() => setIsFormOpen(false)} /> {/* Pass the function */}
-    </div>
-  </div>
-)}
-
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <Form closeOverlay={() => setIsFormOpen(false)} />{" "}
+            {/* Pass the function */}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
