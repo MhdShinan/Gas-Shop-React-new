@@ -73,6 +73,7 @@ export default function ProductCard() {
                   />
                 </div>
               </div>
+              <br /><br />
               <button
                 className="flex items-center gap-2 bg-[#0685F5] text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
                 onClick={() => handleOrderClick(product)}

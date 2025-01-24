@@ -12,7 +12,7 @@ import AdvancedAdmin from './components/AdvancedAdmin';
 import Sighnin from './components/Sighnin';
 import FloatingButtons from './components/FloatingButtons';
 import AdvancedOrderForm from './components/NewAdmin';
-
+import Allproducts from "./components/AllProducts";
 // import SettingsPage from './components/SettingsPage';
 
 const NotFound = () => {
@@ -74,6 +74,7 @@ function App() {
                     <br />
                     <ProductCard />
                     <ProductGrid />
+                    <Allproducts />
                     <Contact />
                     <Footer />
                   </>

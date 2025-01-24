@@ -1,87 +1,133 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import ReactCardFlip from "react-card-flip";
+import { FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa"; // React Icons
 import Small from "../assets/images/download.jpeg";
 import Medium from "../assets/images/download (4).jpeg";
 import Large from "../assets/images/images.jpeg";
 import xLarge from "../assets/images/download (3).jpeg";
 
-function ProductCard({ title, image }) {
-  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+function ProductCard({ id, title, text, image, isFlipped, setFlippedCard }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const openOverlay = () => {
-    setIsOverlayOpen(true);
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleClick = () => {
+    if (isMobile) {
+      setFlippedCard(isFlipped ? null : id);
+    }
   };
 
-  const closeOverlay = () => {
-    setIsOverlayOpen(false);
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setFlippedCard(id);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isMobile) {
+      setFlippedCard(null);
+    }
+  };
+
+  // Shared card styles
+  const cardStyle = {
+    maxWidth: isMobile ? "90%" : "100%",
+    margin: isMobile ? "0 auto" : "initial",
+    height: "100%", // Ensures both sides have the same height
+    width: "100%", // Consistent width
+    display: "flex", // Align content consistently
+    flexDirection: "column",
+    justifyContent: "space-between",
   };
 
   return (
-    <div className="relative bg-white p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <div className="aspect-square w-full bg-gray-100 rounded-md mb-2 overflow-hidden">
-        {image && (
+    <ReactCardFlip
+      isFlipped={isFlipped}
+      flipDirection="horizontal"
+      containerStyle={{ height: "100%" }}
+    >
+      {/* Front Side */}
+      <div
+        className="relative bg-white p-4 border border-gray-300 rounded-lg shadow-lg hover:shadow-xl transition-transform transform cursor-pointer"
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={cardStyle}
+      >
+        <div className="aspect-square w-full bg-gray-100 rounded-md overflow-hidden mb-3">
           <img
             src={image || "/placeholder.svg"}
             alt={title}
-            className="w-full h-full object-cover rounded-md"
+            className="w-full h-full object-cover"
           />
-        )}
-      </div>
-      <div className="text-center">
-        <h3
-          onClick={openOverlay}
-          className="text-sm font-medium text-gray-900 cursor-pointer truncate"
-        >
-          {title}
-        </h3>
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-blue-600 truncate">{title}</h2>
+          <p className="text-sm font-medium text-red-500 truncate">{text}</p>
+        </div>
       </div>
 
-      {/* Overlay */}
-      {isOverlayOpen && (
-        <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-10">
-          <div className="bg-white p-6 rounded-lg w-80">
-            <h4 className="text-xl font-bold mb-4 text-center">Contact</h4>
-            <div className="flex justify-center space-x-4">
-              <a href="tel:+1234567890" className="text-blue-500">
-                <i className="fas fa-phone-alt"></i> Call
-              </a>
-              <a href="https://maps.google.com/?q=location" target="_blank" rel="noopener noreferrer" className="text-green-500">
-                <i className="fas fa-map-marker-alt"></i> Visit
-              </a>
-            </div>
-            <div className="mt-4 text-center">
-              <button
-                onClick={closeOverlay}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+      {/* Back Side */}
+      <div
+        className="relative bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-4 rounded-lg shadow-lg hover:shadow-xl transition-transform transform cursor-pointer"
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={cardStyle}
+      >
+        <div className="flex items-center justify-around h-full">
+          <a
+            href="tel:+1234567890"
+            className="flex flex-col items-center text-white hover:text-gray-300 transition"
+          >
+            <FaPhoneAlt className="text-3xl mb-2" />
+            <span className="text-sm">Call</span>
+          </a>
+          <a
+            href="https://maps.google.com/?q=location"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center text-white hover:text-gray-300 transition"
+          >
+            <FaMapMarkerAlt className="text-3xl mb-2" />
+            <span className="text-sm">Visit</span>
+          </a>
         </div>
-      )}
-    </div>
+      </div>
+    </ReactCardFlip>
   );
 }
 
 function ProductGrid() {
+  const [flippedCard, setFlippedCard] = useState(null);
   const products = [
-    { id: 1, title: 'Product 1', image: Small },
-    { id: 2, title: 'Product 2', image: Medium },
-    { id: 3, title: 'Product 3', image: Large },
-    { id: 4, title: 'Product 4', image: xLarge },
+    { id: 1, title: "Regulators", text: "Click for more details", image: Small },
+    { id: 2, title: "Burners", text: "Click for more details", image: Medium },
+    { id: 3, title: "Hose", text: "Click for more details", image: Large },
+    { id: 4, title: "Pan Support", text: "Click for more details", image: xLarge },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="w-full bg-blue-500 text-white text-center py-3 mb-4 rounded-t-lg">
-        <h2 className="text-xl font-bold">Other Products</h2>
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="w-full bg-blue-600 text-white text-center py-4 mb-6 rounded-t-lg">
+        <h2 className="text-2xl font-bold">Other Products</h2>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         {products.map((product) => (
           <ProductCard
             key={product.id}
+            id={product.id}
             title={product.title}
+            text={product.text}
             image={product.image}
+            isFlipped={flippedCard === product.id}
+            setFlippedCard={setFlippedCard}
           />
         ))}
       </div>
