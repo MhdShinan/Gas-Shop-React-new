@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   TextField,
@@ -14,7 +14,8 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
-
+import Swal from "sweetalert2";
+import axios from "axios";
 import {
   ArrowBack,
   Close,
@@ -22,121 +23,160 @@ import {
   Person,
   DirectionsCar,
   DirectionsWalk,
-  Search
 } from "@mui/icons-material";
-
-
 
 const AdvancedOrderForm = ({ closeOverlay }) => {
   const [formState, setFormState] = useState({
     step: "initial",
     buyType: "",
-    name: "",
-    address: "",
-    email: "",
-    number: "",
+    friendName: "",
+    friendNumber: "",
+    friendAddress: "",
     landmarks: "",
     deliveryType: "",
     travelMode: "",
     otp: "",
-    size: "",
-    price: "",
+    name: "",
+    number: "",
+    email: sessionStorage.getItem('userEmail') || "",
   });
 
-  const prices = {
-    Small: "$10",
-    Medium: "$20",
-    Large: "$30",
-  };
+  const [errors, setErrors] = useState({});
+  const [searchResult, setSearchResult] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
+
+  useEffect(() => {
+    // Fetch user details from the backend based on the email in sessionStorage
+    const emailFromSession = sessionStorage.getItem("email");
+
+    if (emailFromSession) {
+      setFormState((prevState) => ({
+        ...prevState,
+        email: emailFromSession, // Set email from session storage
+      }));
+
+      // Fetch user details
+      axios
+      .get(`http://localhost:3001/api/fetch-details?email=${emailFromSession}`)
+      .then((response) => {
+        if (response.data) {
+          setSearchResult(response.data);
+          setFormState((prevState) => ({
+            ...prevState,
+            name: response.data.name,
+            number: response.data.contactNumber,
+            email: response.data.email,
+          }));
+          sessionStorage.setItem("name", response.data.name);
+          sessionStorage.setItem("number", response.data.contactNumber);
+        }
+      })
+      .catch((success) => {
+        console.error("Error fetching user details:", success
+
+        );
+        Swal.fire("Success", "Fetched user details.", "success");
+      });
+    }
+  }, []);
 
   const updateForm = (key, value) => {
-    setFormState((prev) => ({
-      ...prev,
-      [key]: value,
-      price: key === "size" ? prices[value] : prev.price,
-    }));
+    setFormState((prev) => ({ ...prev, [key]: value }));
   };
 
-  const resetForm = () => {
-    setFormState({
-      step: "initial",
-      buyType: "",
-      name: "",
-      address: "",
-      email: "",
-      number: "",
-      landmarks: "",
-      deliveryType: "",
-      travelMode: "",
-      otp: "",
-      size: "",
-      price: "",
+  const validateFields = (requiredFields) => {
+    const newErrors = {};
+    requiredFields.forEach((field) => {
+      if (!formState[field]) {
+        newErrors[field] = "This field is required";
+      }
     });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const renderInitialStep = () => (
-    <div className="space-y-4">
-      <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        startIcon={<People />}
-        onClick={() => {
-          updateForm("step", "buyToFriend");
-          updateForm("buyType", "Buy for a Friend");
-        }}
-      >
-        Buy for a Friend
-      </Button>
+  const handleSubmitOrder = () => {
+    if (validateFields(["friendName", "friendNumber"])) {
+      Swal.fire({
+        title: "Order Submitted",
+        text: "Your order has been successfully placed.",
+        icon: "success",
+      });
+    }
+  };
 
-      <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        startIcon={<Person />}
-        onClick={() => {
-          updateForm("step", "buyForMe");
-          updateForm("buyType", "Buy for Me");
-        }}
-      >
-        Buy for Me
-      </Button>
-    </div>
-  );
+  const handleOtpSubmit = () => {
+    if (formState.otp === "123456") {
+      Swal.fire("Success", "OTP verified successfully!", "success");
+    } else {
+      Swal.fire("Error", "Invalid OTP. Please try again.", "error");
+    }
+  };
+
+  const resendOtp = () => {
+    setOtpSent(true);
+    Swal.fire("OTP Resent", "A new OTP has been sent to your email.", "info");
+  };
+
+  
+  const handleSearch = () => {
+    Swal.fire({
+      title: "Searching User...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+  
+    fetch('http://localhost:3001/api/users/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: formState.email }), // Send the email from form state
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        Swal.close();
+        if (data.message) {
+          Swal.fire("Error", data.message, "error");
+          setSearchResult(null);
+        } else {
+          setSearchResult(data);
+          setFormState(prev => ({
+            ...prev,
+            name: data.name,
+            number: data.contactNumber,
+            email: data.email,
+          }));
+        }
+      })
+      .catch(error => {
+        Swal.close();
+        Swal.fire("Error", "An error occurred while searching.", "error");
+        setSearchResult(null);
+        console.error('Error:', error);
+      });
+  };
 
   const renderFormField = (label, key, type = "text", placeholder = "") => (
-    <TextField
-      fullWidth
-      variant="outlined"
-      label={label}
-      type={type}
-      placeholder={placeholder}
-      value={formState[key]}
-      onChange={(e) => updateForm(key, e.target.value)}
-    />
-  );
-
-  const renderSizeAndPriceDropdown = () => (
-    <div style={{ display: "flex", gap: "16px" }}>
-      <FormControl fullWidth>
-        <Typography>Size</Typography>
-        <Select
-          value={formState.size}
-          onChange={(e) => updateForm("size", e.target.value)}
-        >
-          <MenuItem value="Small">Small</MenuItem>
-          <MenuItem value="Medium">Medium</MenuItem>
-          <MenuItem value="Large">Large</MenuItem>
-        </Select>
-      </FormControl>
-      <FormControl fullWidth>
-        <Typography>Price</Typography>
-        <TextField
-          variant="outlined"
-          value={formState.price}
-          disabled
-        />
-      </FormControl>
+    <div style={{ marginBottom: "16px" }}>
+      <TextField
+        fullWidth
+        variant="outlined"
+        label={label}
+        type={type}
+        placeholder={placeholder}
+        value={formState[key]}
+        onChange={(e) => updateForm(key, e.target.value)}
+        error={!!errors[key]}
+        helperText={errors[key]}
+        disabled={["name", "number", "email"].includes(key)} // Disable these fields
+      />
     </div>
   );
 
@@ -154,158 +194,217 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
   );
 
   const renderTravelMode = () => (
-    <FormControl>
-      <Typography>Travel Mode</Typography>
-      <RadioGroup
-        value={formState.travelMode}
-        onChange={(e) => updateForm("travelMode", e.target.value)}
-      >
-        <FormControlLabel
-          value="vehicle"
-          control={<Radio />}
-          label={
-            <>
-              By Vehicle <DirectionsCar fontSize="small" />
-            </>
-          }
-        />
-        <FormControlLabel
-          value="person"
-          control={<Radio />}
-          label={
-            <>
-              By Person <DirectionsWalk fontSize="small" />
-            </>
-          }
-        />
-      </RadioGroup>
-    </FormControl>
+    formState.deliveryType === "delivery" && (
+      <FormControl>
+        <Typography>Travel Mode</Typography>
+        <RadioGroup
+          value={formState.travelMode}
+          onChange={(e) => updateForm("travelMode", e.target.value)}
+        >
+          <FormControlLabel
+            value="vehicle"
+            control={<Radio />}
+            label={(
+              <>
+                By Vehicle <DirectionsCar fontSize="small" />
+              </>
+            )}
+          />
+          <FormControlLabel
+            value="person"
+            control={<Radio />}
+            label={(
+              <>
+                By Person <DirectionsWalk fontSize="small" />
+              </>
+            )}
+          />
+        </RadioGroup>
+      </FormControl>
+    )
   );
 
-  const renderBuyToFriendForm = () => (
-    <div className="space-y-4">
-      {renderFormField("Name", "name", "text", "Friend's Name")}
-      {renderFormField("Address", "address", "text", "Friend's Address")}
-      {renderFormField("Email", "email", "email", "Friend's Email")}
-      {renderFormField("Number", "number", "tel", "Friend's Phone Number")}
-      {renderFormField("Landmarks", "landmarks", "text", "Nearby Landmarks")}
-      {renderSizeAndPriceDropdown()}
+  const renderBuyForFriendForm = () => (
+    <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+      {/* Non-editable user information */}
+      <div style={{ marginBottom: "16px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Your Name"
+          value={formState.name}
+          disabled
+        />
+      </div>
+      <div style={{ marginBottom: "16px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Your Number"
+          value={formState.number}
+          disabled
+        />
+      </div>
+      <div style={{ marginBottom: "16px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Your Email"
+          value={formState.email}
+          disabled
+        />
+      </div>
+  
+      {/* Friend details */}
+      {renderFormField("Friend Name", "friendName")}
+      {renderFormField("Friend Number", "friendNumber", "tel")}
       {renderDeliveryOptions()}
+      {formState.deliveryType === "delivery" &&
+        renderFormField("Friend Address", "friendAddress")}
+      {formState.deliveryType === "delivery" &&
+        renderFormField("Address Landmark", "landmarks")}
       {formState.deliveryType === "delivery" && renderTravelMode()}
+  
       <Button
         fullWidth
         variant="contained"
         color="primary"
-        onClick={() => updateForm("step", "otp")}
+        onClick={handleSubmitOrder}
       >
-        Request Order
+        Submit Order
       </Button>
     </div>
   );
 
   const renderBuyForMeForm = () => (
+    <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+      <Typography variant="h6">Buy for Me</Typography>
+  
+      {/* Non-editable email field */}
+      <div style={{ marginBottom: "16px" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Email"
+          value={formState.email}
+          disabled
+        />
+      </div>
+  
+      <Button
+        fullWidth
+        variant="contained"
+        color="primary"
+        onClick={handleSearch}
+      >
+        Search User
+      </Button>
+  
+      {/* Display search results */}
+      {searchResult && (
+        <div style={{ marginTop: "16px" }}>
+          <Typography variant="body1">User Found:</Typography>
+          <Typography>Name: {searchResult.name}</Typography>
+          <Typography>Number: {searchResult.contactNumber}</Typography>
+          <Typography>Email: {searchResult.email}</Typography>
+  
+          <Typography variant="h6" style={{ marginTop: "16px" }}>
+            Delivery Options:
+          </Typography>
+          {renderDeliveryOptions()}
+  
+          {formState.deliveryType === "delivery" && (
+            <>
+              {renderTravelMode()}
+              {renderFormField("Address", "friendAddress")}
+              {renderFormField("Address Landmark", "landmarks")}
+            </>
+          )}
+  
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              if (validateFields(["name", "number", "email"])) {
+                Swal.fire({
+                  title: "OTP Verification",
+                  html: (
+                    <div>
+                      <TextField
+                        fullWidth
+                        label="Enter OTP"
+                        value={formState.otp}
+                        onChange={(e) => updateForm("otp", e.target.value)}
+                        style={{ marginBottom: "16px" }}
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleOtpSubmit}
+                      >
+                        Verify OTP
+                      </Button>
+                      {otpSent && (
+                        <Button
+                          variant="text"
+                          color="secondary"
+                          onClick={resendOtp}
+                          style={{ marginLeft: "16px" }}
+                        >
+                          Resend OTP
+                        </Button>
+                      )}
+                    </div>
+                  ),
+                  showConfirmButton: false,
+                  showCloseButton: true,
+                });
+              }
+            }}
+          >
+            Submit Order
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+  const renderInitialStep = () => (
     <div className="space-y-4">
-      {renderFormField("Email", "email", "email", "Your Email")}
       <Button
         fullWidth
         variant="contained"
         color="primary"
+        startIcon={<People />}
+        onClick={() => updateForm("step", "buyToFriend")}
       >
-        Search
+        Buy for a Friend
       </Button>
-      {renderFormField("Name", "name", "text", "Your Name")}
-      {renderFormField("Number", "number", "tel", "Your Phone Number")}
-      {renderFormField("Address", "address", "text", "Your Address")}
-      {renderFormField("Landmarks", "landmarks", "text", "Nearby Landmarks")}
-      {renderSizeAndPriceDropdown()}
-      {renderDeliveryOptions()}
-      {formState.deliveryType === "delivery" && renderTravelMode()}
-      <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        onClick={() => updateForm("step", "otp")}
-      >
-        Request Order
-      </Button>
-    </div>
-  );
 
-  const renderOtpStep = () => (
-    <div className="space-y-4">
-      {renderFormField("Enter 6-digit OTP", "otp", "text", "000000")}
       <Button
         fullWidth
         variant="contained"
         color="primary"
-        onClick={() => alert("Order placed successfully!")}
+        startIcon={<Person />}
+        onClick={() => updateForm("step", "buyForMe")}
       >
-        Order Now
+        Buy for Me
       </Button>
     </div>
   );
-
-  const renderBackButton = () => (
-    <div style={{ marginBottom: "16px" }}>
-    <Button
-      startIcon={<ArrowBack />}
-      onClick={() => updateForm("step", "initial")}
-      variant="outlined"
-    >
-      Back
-    </Button>
-    </div>
-  );
-<br/>
-const renderCloseButton = () => (
-  <IconButton
-    onClick={() => {
-      console.log("Close button clicked");
-      closeOverlay(); // This closes the overlay
-    }}
-    style={{ position: "absolute", top: "10px", right: "10px" }}
-  >
-    <Close />
-  </IconButton>
-);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        overflowY: "auto",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        backdropFilter: "blur(5px)",
-        zIndex: 1000,
-      }}
-    >
-      <Card
-        style={{
-          position: "relative",
-          padding: 16,
-          maxWidth: 400,
-          width: "90%",
-          margin: "auto",
-        }}
-      >
+    <div>
+      <Card>
         <CardHeader
-          title={<Typography variant="h6">{formState.buyType || "Order Form"}</Typography>}
+          action={<IconButton onClick={closeOverlay}><Close /></IconButton>}
+          title={<Typography variant="h6">Advanced Order Form</Typography>}
         />
         <CardContent>
-        {renderCloseButton()} {/* Ensure the close button is rendered */}
-        {formState.step !== "initial" && renderBackButton()}
-        {formState.step === "initial" && renderInitialStep()}
-        {formState.step === "buyToFriend" && renderBuyToFriendForm()}
-        {formState.step === "buyForMe" && renderBuyForMeForm()}
-        {formState.step === "otp" && renderOtpStep()}
-      </CardContent>
+          {formState.step === "initial" && renderInitialStep()}
+          {formState.step === "buyToFriend" && renderBuyForFriendForm()}
+          {formState.step === "buyForMe" && renderBuyForMeForm()}
+        </CardContent>
       </Card>
     </div>
   );

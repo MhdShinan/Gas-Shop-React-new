@@ -4,7 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
-
+const fetchDetailRoute = require('./routes/fetchDetailRoute');
 const app = express();
 
 // CORS middleware
@@ -25,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI, {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/users', fetchDetailRoute);
 
 // Server setup
 const PORT = process.env.PORT || 3001;

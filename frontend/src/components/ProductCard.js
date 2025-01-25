@@ -46,40 +46,66 @@ export default function ProductCard() {
     setShowDeliveryForm(true);
   };
 
-  if (loading) return <div>Loading products...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg font-semibold">Loading products...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="w-full min-h-screen p-6 bg-gray-100">
       <div className="max-w-7xl mx-auto">
-        <div className="w-full bg-blue-500 text-white text-center py-3 mb-4 rounded-t-lg">
-          <h2 className="text-xl font-bold">Products</h2>
+        {/* Header */}
+        <div className="bg-blue-600 text-white text-center py-4 mb-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold">Our Products</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl p-6 flex flex-col items-center"
+              className="relative bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow"
             >
-              <h2 className="text-[#0685F5] text-2xl font-bold mb-6">
+              {/* Out of Stock Badge */}
+              {product.stock === 0 && (
+                <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-tr-lg rounded-bl-lg">
+                  Out of Stock
+                </div>
+              )}
+
+              <h2 className="text-[#0685F5] text-lg font-bold mb-4 text-center">
                 {product.title}
               </h2>
-              <div className="relative w-full h-64 mb-6">
-                <div className="aspect-square w-full bg-gray-100 rounded-md mb-2 overflow-hidden">
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={`${product.title} Gas Cylinder`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
+
+              <div className="aspect-square w-full bg-gray-200 rounded-md overflow-hidden">
+                <img
+                  src={product.image || "/placeholder.svg"}
+                  alt={`${product.title}`}
+                  className="w-full h-full object-cover sm:w-32 sm:h-32 md:w-full md:h-full"
+                />
               </div>
-              <br /><br />
               <button
-                className="flex items-center gap-2 bg-[#0685F5] text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
-                onClick={() => handleOrderClick(product)}
+                className={`w-full py-2 text-sm font-bold rounded-lg transition-colors ${
+                  product.stock === 0
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-[#0685F5] text-white hover:bg-blue-600"
+                }`}
+                onClick={() => product.stock > 0 && handleOrderClick(product)}
+                disabled={product.stock === 0}
               >
-                <BsClipboard2Data className="text-xl" />
-                Details
+                <BsClipboard2Data className="inline-block mr-2" />
+                {product.stock > 0 ? "Details" : "Unavailable"}
               </button>
             </div>
           ))}
@@ -88,30 +114,30 @@ export default function ProductCard() {
 
       {/* Delivery Form Modal */}
       {showDeliveryForm && selectedProduct && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center p-4 z-50">
-          <div className="w-[250px] h-[450px] rounded-lg p-6 overflow-y-auto bg-white">
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <img
-                  src={selectedProduct.image}
-                  alt={selectedProduct.title}
-                  className="w-40 h-40 object-cover mx-auto mb-4 rounded-lg"
-                />
-                <h3 className="text-2xl font-bold">{selectedProduct.title}</h3>
-                <p className="text-xl font-semibold mt-4">
-                  Price: {selectedProduct.price}
-                  <br />
-                  Stock: {selectedProduct.stock}
-                </p>
-              </div>
-              <button
-                className="flex items-center gap-2 bg-red-500 text-white px-16 py-3 rounded-lg hover:bg-red-700 transition-colors"
-                onClick={() => setShowDeliveryForm(false)}
-              >
-                <Close className="text-xl" />
-                Close
-              </button>
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg p-6 w-11/12 sm:w-96 shadow-lg">
+            <div className="text-center mb-6">
+              <img
+                src={selectedProduct.image}
+                alt={selectedProduct.title}
+                className="w-40 h-40 object-cover mx-auto mb-4 rounded-md"
+              />
+              <h3 className="text-2xl font-bold">{selectedProduct.title}</h3>
+              <p className="text-lg font-semibold text-gray-700 mt-4">
+                Price: ${selectedProduct.price}
+              </p>
+              <p className="text-md text-gray-500 mt-2">
+                Stock: {selectedProduct.stock}
+              </p>
             </div>
+
+            <button
+              className="w-full py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors"
+              onClick={() => setShowDeliveryForm(false)}
+            >
+              <Close className="inline-block mr-2" />
+              Close
+            </button>
           </div>
         </div>
       )}
