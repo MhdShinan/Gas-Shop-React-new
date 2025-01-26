@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const fetchDetailRoute = require('./routes/fetchDetailRoute');
+const NewProductRoutes = require('./routes/NewProductRoutes');
+
+
 const app = express();
 
 // CORS middleware
@@ -26,6 +29,8 @@ mongoose.connect(process.env.MONGO_URI, {
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', fetchDetailRoute);
+app.use('/api', NewProductRoutes);
+app.use('/api/otp', require('./routes/otpRoutes')); // Add OTP routes here
 
 // Server setup
 const PORT = process.env.PORT || 3001;
