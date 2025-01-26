@@ -118,7 +118,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
                 updateForm("sizePrice", product.price);
               }}
             >
-              {product.title} (${product.price})
+              {product.title} ({product.price}Rs)
             </Button>
           ))}
         </div>
@@ -174,7 +174,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
         html: `
           <div>
             <p>Product: ${selectedProduct?.title}</p>
-            <p>Price: $${orderData.price}</p>
+            <p>Price: {orderData.price}Rs</p>
           </div>
         `,
         icon: "success",
@@ -208,63 +208,84 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
     }
   };
   const handleBuyForMeOrder = async () => {
-    const requiredFields = ["email"];
+    const requiredFields = ["email", "deliveryType"];
+    if (formState.deliveryType === "delivery") {
+      requiredFields.push("friendAddress", "landmarks", "travelMode");
+    }
+  
     if (!validateFields(requiredFields) || !selectedProduct) return;
-
+  
     try {
-      // First send OTP
-      const sendOtpResponse = await axios.post(
+      const { data: otpData } = await axios.post(
         "http://localhost:3001/api/otp/send",
-        {
-          email: formState.email, // Changed from phoneNumber to email
-        }
+        { email: formState.email }
       );
-
-      if (sendOtpResponse.data.message === "OTP sent to email successfully") {
+  
+      if (otpData.message === "OTP sent to email successfully") {
         Swal.fire({
           title: "Enter OTP",
-          html: `<input type="text" id="otp-input" class="swal2-input" placeholder="Enter OTP sent to ${formState.email}">`,
-          focusConfirm: false,
+          html: `<input type="text" id="otp-input" class="swal2-input" placeholder="Enter OTP">`,
           showCancelButton: true,
-          confirmButtonText: "Verify OTP",
+          confirmButtonText: "Verify",
           preConfirm: async () => {
-            const otp = document.getElementById("otp-input").value;
-            const verificationSuccess = await handleOtpSubmit(
-              otp,
-              formState.email
-            ); // Pass email instead of phoneNumber
-
-            if (verificationSuccess) {
-              // Submit the actual order after successful verification
+            try {
+              const otp = document.getElementById("otp-input").value;
+              await handleOtpSubmit(otp, formState.email);
+  
               const orderData = {
                 ...formState,
-                product: selectedProduct?.title,
+                product: selectedProduct.title,
                 price: formState.sizePrice,
               };
-
-              // Send order to backend
-              await axios.post("http://localhost:3001/api/orders", orderData);
-
+  
+              // Changed endpoint to match backend route
+              const { data: orderResponse } = await axios.post(
+                "http://localhost:3001/api/orders",
+                orderData
+              );
+  
               Swal.fire({
-                title: "Order Submitted",
-                html: `
-                <div>
-                  <p>Product: ${selectedProduct?.title}</p>
-                  <p>Price: $${orderData.price}</p>
-                </div>
-              `,
-                icon: "success",
+                title: "Order Pending",
+                text: "Your order is waiting for confirmation!",
+                icon: "info",
+                timer: 5000
               });
+  
+              const checkStatus = async (orderId) => {
+                try {
+                  const { data } = await axios.get(
+                    `http://localhost:3001/api/orders/${orderId}`
+                  );
+                  
+                  if (data.data.status === 'accepted') {
+                    Swal.fire("Success!", "Your order has been accepted!", "success");
+                    return true;
+                  }
+                  if (data.data.status === 'declined') {
+                    Swal.fire("Declined", "Your order was declined", "error");
+                    return true;
+                  }
+                  return false;
+                } catch (error) {
+                  console.error("Status check failed:", error);
+                  return false;
+                }
+              };
+  
+              // Start polling with 5 second intervals
+              const pollInterval = setInterval(async () => {
+                const resolved = await checkStatus(orderResponse.data._id);
+                if (resolved) clearInterval(pollInterval);
+              }, 5000);
+  
+            } catch (error) {
+              Swal.showValidationMessage(`Order failed: ${error.response?.data?.message || error.message}`);
             }
-          },
+          }
         });
       }
     } catch (error) {
-      Swal.fire(
-        "Error",
-        error.response?.data?.message || "Failed to send OTP",
-        "error"
-      );
+      Swal.fire("Error", error.response?.data?.message || "Order failed", "error");
     }
   };
 
@@ -396,7 +417,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
                   html: `
                     <div>
                       <p>Product: ${selectedProduct?.title}</p>
-                      <p>Price: $${orderData.price}</p>
+                      <p>Price: ${orderData.price}Rs</p>
                       <p>Friend's Name: ${orderData.friendName}</p>
                       <p>Friend's Number: ${orderData.friendNumber}</p>
                     </div>

@@ -6,12 +6,17 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const fetchDetailRoute = require('./routes/fetchDetailRoute');
 const NewProductRoutes = require('./routes/NewProductRoutes');
+// app.js
+const orderRoutes = require('./routes/orderRoutes');
 
 
 const app = express();
 
-// CORS middleware
-app.use(cors());
+// app.js
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 
 // Increase the payload size limit to handle large requests (e.g., large images in base64)
 app.use(express.json({ limit: '10mb' }));  // for JSON payloads
@@ -31,6 +36,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', fetchDetailRoute);
 app.use('/api', NewProductRoutes);
 app.use('/api/otp', require('./routes/otpRoutes')); // Add OTP routes here
+app.use('/api/orders', orderRoutes);
 
 // Server setup
 const PORT = process.env.PORT || 3001;
