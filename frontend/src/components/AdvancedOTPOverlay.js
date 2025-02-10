@@ -1,85 +1,85 @@
-import { useState, useRef, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AdvancedOTPOverlay = ({ isOpen, onClose, onVerify, onResend }) => {
-  const [otp, setOtp] = useState(["", "", "", "", "", ""])
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(30)
-  const inputRefs = useRef([])
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const inputRefs = useRef([]);
 
   useEffect(() => {
     if (isOpen) {
-      inputRefs.current[0]?.focus()
-      startCountdown()
+      inputRefs.current[0]?.focus();
+      startCountdown();
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   useEffect(() => {
     if (otp.every((digit) => digit !== "")) {
-      handleVerify()
+      handleVerify();
     }
-  }, [otp])
+  }, [otp]);
 
   const startCountdown = () => {
-    setTimeLeft(30)
+    setTimeLeft(30);
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
-          clearInterval(timer)
-          return 0
+          clearInterval(timer);
+          return 0;
         }
-        return prevTime - 1
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }
+        return prevTime - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  };
 
   const handleChange = (index, value) => {
-    if (isNaN(value)) return
-    const newOtp = [...otp]
-    newOtp[index] = value
-    setOtp(newOtp)
+    if (isNaN(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
 
     if (value !== "" && index < 5) {
-      inputRefs.current[index + 1].focus()
+      inputRefs.current[index + 1].focus();
     }
-  }
+  };
 
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && index > 0 && otp[index] === "") {
-      inputRefs.current[index - 1].focus()
+      inputRefs.current[index - 1].focus();
     }
-  }
+  };
 
   const handleVerify = async () => {
-    const otpString = otp.join("")
+    const otpString = otp.join("");
     try {
-      const result = await onVerify(otpString)
+      const result = await onVerify(otpString);
       if (result.success) {
-        setSuccess(true)
-        setError("")
+        setSuccess(true);
+        setError("");
       } else {
-        setError("Invalid OTP. Please try again.")
+        setError("Invalid OTP. Please try again.");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("An error occurred. Please try again.");
     }
-  }
+  };
 
   const handleResend = async () => {
-    setOtp(["", "", "", "", "", ""])
-    setError("")
-    setSuccess(false)
+    setOtp(["", "", "", "", "", ""]);
+    setError("");
+    setSuccess(false);
     try {
-      await onResend()
-      startCountdown()
+      await onResend();
+      startCountdown();
     } catch (err) {
-      setError("Failed to resend OTP. Please try again.")
+      setError("Failed to resend OTP. Please try again.");
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
@@ -142,8 +142,8 @@ const AdvancedOTPOverlay = ({ isOpen, onClose, onVerify, onResend }) => {
         </motion.div>
       </motion.div>
     </AnimatePresence>
-  )
-}
+  );
+};
 
-export default AdvancedOTPOverlay
+export default AdvancedOTPOverlay;
 

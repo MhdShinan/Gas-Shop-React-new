@@ -27,6 +27,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import AdvancedOTPOverlay from "./AdvancedOTPOverlay";
 
 const AdvancedOrderForm = ({ closeOverlay }) => {
   const navigate = useNavigate();
@@ -52,8 +53,9 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
   const [selectedProducts, setSelectedProducts] = useState([]); // Changed to array for multiple products
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [otpForVerification, setOtpForVerification] = useState(null); // State to store OTP for verification
+  const [showOtpOverlay, setShowOtpOverlay] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     const emailFromSession = sessionStorage.getItem("email");
     if (emailFromSession) {
       axios
@@ -78,7 +80,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
           console.error("Error fetching user details:", error);
           toast.error(`Failed to load user details: ${error.message}`, {
             position: "top-left",
-            autoClose: 900,
+            autoClose: 1200,
           });
         });
     }
@@ -98,7 +100,6 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
     fetchAllProducts();
   }, []);
 
-
   const updateForm = (key, value) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
   };
@@ -115,13 +116,24 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
             <Button
               key={product._id}
               variant="contained"
-              color={selectedProducts.some(p => p._id === product._id) ? "primary" : "inherit"}
+              color={
+                selectedProducts.some((p) => p._id === product._id)
+                  ? "primary"
+                  : "inherit"
+              }
               onClick={() => {
-                const isSelected = selectedProducts.some(p => p._id === product._id);
+                const isSelected = selectedProducts.some(
+                  (p) => p._id === product._id
+                );
                 if (isSelected) {
-                  setSelectedProducts(prev => prev.filter(p => p._id !== product._id));
+                  setSelectedProducts((prev) =>
+                    prev.filter((p) => p._id !== product._id)
+                  );
                 } else {
-                  setSelectedProducts(prev => [...prev, { ...product, quantity: 1 }]);
+                  setSelectedProducts((prev) => [
+                    ...prev,
+                    { ...product, quantity: 1 },
+                  ]);
                 }
               }}
             >
@@ -145,8 +157,8 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
           </Typography>
           <IconButton
             onClick={() =>
-              setSelectedProducts(prev =>
-                prev.map(p =>
+              setSelectedProducts((prev) =>
+                prev.map((p) =>
                   p._id === product._id
                     ? { ...p, quantity: Math.max(p.quantity - 1, 1) }
                     : p
@@ -169,8 +181,8 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
           />
           <IconButton
             onClick={() =>
-              setSelectedProducts(prev =>
-                prev.map(p =>
+              setSelectedProducts((prev) =>
+                prev.map((p) =>
                   p._id === product._id
                     ? { ...p, quantity: Math.min(p.quantity + 1, 5) }
                     : p
@@ -219,33 +231,45 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
   };
 
   const handleOrderSubmission = async (isForFriend) => {
-    console.log("Submit Order button clicked"); // Debugging
-    const requiredFields = isForFriend ? ["friendName", "friendNumber", "email"] : ["email"];
-    if (!validateFields(requiredFields) || selectedProducts.length === 0) return;
+    const requiredFields = isForFriend
+      ? ["friendName", "friendNumber", "email"]
+      : ["email"];
+  
+    if (!validateFields(requiredFields) || selectedProducts.length === 0) {
+      Swal.fire("Error", "Please fill in all required fields", "error");
+      return;
+    }
   
     try {
-      // First send OTP
-      const sendOtpResponse = await axios.post(
-        "http://localhost:3001/api/otp/send",
-        {
-          email: formState.email,
-        }
-      );
-  
-      if (sendOtpResponse.data.message === "OTP sent to email successfully") {
-        setOtpForVerification(formState.email); // Store email for OTP verification
-        console.log("OTP overlay is open:", true); // Log OTP overlay state
-        navigate("/newotp"); // Navigate to new OTP overlay
-      }
+      await axios.post("http://localhost:3001/api/otp/send", {
+        email: formState.email
+      });
+      setShowOtpOverlay(true);
     } catch (error) {
-      Swal.fire(
-        "Error",
-        error.response?.data?.message || "Failed to send OTP",
-        "error"
-      );
+      Swal.fire("Error", "Failed to send OTP", "error");
     }
   };
-
+  const submitOrder = async () => {
+    try {
+      const orderData = {
+        customerEmail: formState.email,
+        products: selectedProducts.map(p => ({
+          productId: p._id,
+          quantity: p.quantity
+        })),
+        // Add other necessary fields from formState
+        deliveryType: formState.deliveryType,
+        deliveryAddress: formState.friendAddress,
+        // ... other fields
+      };
+  
+      await axios.post("http://localhost:3001/api/orders", orderData);
+      toast.success("Order placed successfully!");
+      closeOverlay();
+    } catch (error) {
+      toast.error("Order submission failed");
+    }
+  };
   const handleSubmitOrder = async () => {
     if (!formState.number) {
       toast.error("Please enter your contact number.");
@@ -271,10 +295,13 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
 
   const handleOtpSubmit = async (otp, email) => {
     try {
-      const response = await axios.post("http://localhost:3001/api/otp/verify", {
-        otp,
-        email,
-      });
+      const response = await axios.post(
+        "http://localhost:3001/api/otp/verify",
+        {
+          otp,
+          email,
+        }
+      );
       if (response.data.success) {
         toast.success("OTP verified successfully!");
         console.log("OTP overlay is open:", false); // Log OTP overlay state
@@ -426,40 +453,39 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
         Search User
       </Button>
 
-      {
-  searchResult && (
-    <div>
-      <Typography variant="subtitle1" gutterBottom>
-        User Found: {searchResult.name} <br />
-        Email: ({searchResult.email}) <br />
-        Number: {searchResult.contactNumber} <br />
-      </Typography>
-      <br />
-      <Typography variant="h6" gutterBottom>
-        Delivery Options:
-      </Typography>
-      {renderDeliveryOptions()}
+      {searchResult && (
+        <div>
+          <Typography variant="subtitle1" gutterBottom>
+            User Found: {searchResult.name} <br />
+            Email: ({searchResult.email}) <br />
+            Number: {searchResult.contactNumber} <br />
+          </Typography>
+          <br />
+          <Typography variant="h6" gutterBottom>
+            Delivery Options:
+          </Typography>
+          {renderDeliveryOptions()}
 
-      {formState.deliveryType === "delivery" && (
-        <>
-          {renderTravelMode()}
-          {renderFormField("Delivery Address", "friendAddress")}
-          {renderFormField("Landmark", "landmarks")}
-        </>
+          {formState.deliveryType === "delivery" && (
+            <>
+              {renderTravelMode()}
+              {renderFormField("Delivery Address", "friendAddress")}
+              {renderFormField("Landmark", "landmarks")}
+            </>
+          )}
+
+          {renderFormField("Price", "sizePrice")}
+
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={() => handleOrderSubmission(false)}
+          >
+            Submit Order
+          </Button>
+        </div>
       )}
-
-      {renderFormField("Price", "sizePrice")}
-
-      <Button
-        fullWidth
-        variant="contained"
-        color="primary"
-        onClick={() => handleOrderSubmission(false)}
-      >
-        Submit Order
-      </Button>
-    </div>
-  )}
     </div>
   );
 
@@ -476,6 +502,38 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
           title={<Typography variant="h6">Form</Typography>}
         />
         <CardContent>
+          {showOtpOverlay && (
+            <AdvancedOTPOverlay
+              isOpen={showOtpOverlay}
+              onClose={() => setShowOtpOverlay(false)}
+              onVerify={async (enteredOtp) => {
+                try {
+                  const response = await axios.post(
+                    "http://localhost:3001/api/otp/verify",
+                    {
+                      otp: enteredOtp,
+                      email: formState.email,
+                    }
+                  );
+
+                  if (response.data.success) {
+                    // Proceed with order submission
+                    await submitOrder();
+                    return true;
+                  }
+                  return false;
+                } catch (error) {
+                  toast.error("OTP verification failed");
+                  return false;
+                }
+              }}
+              onResend={() => {
+                axios.post("http://localhost:3001/api/otp/send", {
+                  email: formState.email,
+                });
+              }}
+            />
+          )}
           {formState.step === "initial" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Button

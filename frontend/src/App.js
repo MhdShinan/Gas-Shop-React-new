@@ -11,10 +11,10 @@ import Footer from './components/Footer';
 import AdvancedAdmin from './components/AdvancedAdmin';
 import Sighnin from './components/Sighnin';
 import FloatingButtons from './components/FloatingButtons';
-import AdvancedOrderForm from './components/NewAdmin';
+import AdvancedOrderForm from './components/AdvancedOrderForm'; // Corrected import
 import Allproducts from "./components/AllProducts";
 // import SettingsPage from './components/SettingsPage';
-import Newotp from './components/Newotp';
+import AdvancedOTPOverlay from "./components/AdvancedOTPOverlay"; // Corrected import
 
 const NotFound = () => {
   return (
@@ -86,7 +86,7 @@ function App() {
               <Route path="/sign-in" element={<Navigate to="/" replace />} />
               {/* <Route path='/settings' element={<SettingsPage />}/> */}
               <Route path='/form' element={<AdvancedOrderForm />}/>
-              <Route path='/newotp' element={<Newotp />}/>
+              <Route path='/newotp' element={<AdvancedOTPOverlay />}/> {/* Corrected component usage */}
             </>
           )}
 
