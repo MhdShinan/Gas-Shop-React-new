@@ -14,6 +14,7 @@ import FloatingButtons from './components/FloatingButtons';
 import AdvancedOrderForm from './components/NewAdmin';
 import Allproducts from "./components/AllProducts";
 // import SettingsPage from './components/SettingsPage';
+import Newotp from './components/Newotp';
 
 const NotFound = () => {
   return (
@@ -85,6 +86,7 @@ function App() {
               <Route path="/sign-in" element={<Navigate to="/" replace />} />
               {/* <Route path='/settings' element={<SettingsPage />}/> */}
               <Route path='/form' element={<AdvancedOrderForm />}/>
+              <Route path='/newotp' element={<Newotp />}/>
             </>
           )}
 

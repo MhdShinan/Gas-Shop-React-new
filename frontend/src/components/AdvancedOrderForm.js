@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Button,
   TextField,
@@ -21,11 +21,15 @@ import {
   Person,
   DirectionsCar,
   DirectionsWalk,
+  Add,
+  Remove,
 } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
 const AdvancedOrderForm = ({ closeOverlay }) => {
+  const navigate = useNavigate();
   const [formState, setFormState] = useState({
     step: "initial",
     friendName: "",
@@ -45,10 +49,11 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
   const [searchResult, setSearchResult] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
   const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]); // Changed to array for multiple products
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [otpForVerification, setOtpForVerification] = useState(null); // State to store OTP for verification
 
-  useEffect(() => {
+   useEffect(() => {
     const emailFromSession = sessionStorage.getItem("email");
     if (emailFromSession) {
       axios
@@ -64,22 +69,21 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
               email: response.data.email,
             }));
             toast.success("User details loaded successfully!", {
-              position: "top-right",
-              autoClose: 3000,
+              position: "top-left",
+              autoClose: 900,
             });
           }
         })
         .catch((error) => {
           console.error("Error fetching user details:", error);
           toast.error(`Failed to load user details: ${error.message}`, {
-            position: "top-right",
-            autoClose: 5000,
+            position: "top-left",
+            autoClose: 900,
           });
         });
     }
   }, []);
 
-  // Fetch all products
   useEffect(() => {
     const fetchAllProducts = async () => {
       try {
@@ -94,11 +98,12 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
     fetchAllProducts();
   }, []);
 
+
   const updateForm = (key, value) => {
     setFormState((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Product selection with price
+  // Product selection with quantity control
   const renderProductSelection = () => (
     <div style={{ marginBottom: "20px" }}>
       <Typography variant="h6">Select Product:</Typography>
@@ -110,19 +115,74 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
             <Button
               key={product._id}
               variant="contained"
-              color={
-                selectedProduct?._id === product._id ? "primary" : "inherit"
-              }
+              color={selectedProducts.some(p => p._id === product._id) ? "primary" : "inherit"}
               onClick={() => {
-                setSelectedProduct(product);
-                updateForm("sizePrice", product.price);
+                const isSelected = selectedProducts.some(p => p._id === product._id);
+                if (isSelected) {
+                  setSelectedProducts(prev => prev.filter(p => p._id !== product._id));
+                } else {
+                  setSelectedProducts(prev => [...prev, { ...product, quantity: 1 }]);
+                }
               }}
             >
-              {product.title} ({product.price}Rs)
+              {product.title} ({product.price} Rs)
             </Button>
           ))}
         </div>
       )}
+
+      {selectedProducts.map((product) => (
+        <div
+          key={product._id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginTop: "10px",
+          }}
+        >
+          <Typography variant="body1" style={{ marginRight: "10px" }}>
+            {product.title} Quantity:
+          </Typography>
+          <IconButton
+            onClick={() =>
+              setSelectedProducts(prev =>
+                prev.map(p =>
+                  p._id === product._id
+                    ? { ...p, quantity: Math.max(p.quantity - 1, 1) }
+                    : p
+                )
+              )
+            }
+            disabled={product.quantity === 1}
+          >
+            <Remove />
+          </IconButton>
+          <TextField
+            value={product.quantity}
+            variant="outlined"
+            size="small"
+            style={{
+              width: "50px",
+              textAlign: "center",
+              pointerEvents: "none",
+            }}
+          />
+          <IconButton
+            onClick={() =>
+              setSelectedProducts(prev =>
+                prev.map(p =>
+                  p._id === product._id
+                    ? { ...p, quantity: Math.min(p.quantity + 1, 5) }
+                    : p
+                )
+              )
+            }
+            disabled={product.quantity === 5}
+          >
+            <Add />
+          </IconButton>
+        </div>
+      ))}
     </div>
   );
 
@@ -151,141 +211,81 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
       }
     });
 
-    if (!selectedProduct) {
-      newErrors.product = "Please select a product";
+    if (selectedProducts.length === 0) {
+      newErrors.product = "Please select at least one product";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Order submission handler
-  const handleSubmitOrder = () => {
-    const requiredFields = ["friendName", "friendNumber"];
-    if (validateFields(requiredFields)) {
-      const orderData = {
-        ...formState,
-        product: selectedProduct?.title,
-        price: formState.sizePrice,
-      };
-
-      Swal.fire({
-        title: "Order Submitted",
-        html: `
-          <div>
-            <p>Product: ${selectedProduct?.title}</p>
-            <p>Price: {orderData.price}Rs</p>
-          </div>
-        `,
-        icon: "success",
-      });
-    }
-  };
-
-  // OTP handling
-  const handleOtpSubmit = async (otp, email) => {
-    // Changed parameter from phoneNumber to email
+  const handleOrderSubmission = async (isForFriend) => {
+    console.log("Submit Order button clicked"); // Debugging
+    const requiredFields = isForFriend ? ["friendName", "friendNumber", "email"] : ["email"];
+    if (!validateFields(requiredFields) || selectedProducts.length === 0) return;
+  
     try {
-      const verifyResponse = await axios.post(
-        "http://localhost:3001/api/otp/verify",
+      // First send OTP
+      const sendOtpResponse = await axios.post(
+        "http://localhost:3001/api/otp/send",
         {
-          email, // Changed from phoneNumber to email
-          otp,
+          email: formState.email,
         }
       );
-
-      if (verifyResponse.data.message === "OTP verified successfully") {
-        Swal.fire("Success", "OTP verified successfully!", "success");
-        return true;
+  
+      if (sendOtpResponse.data.message === "OTP sent to email successfully") {
+        setOtpForVerification(formState.email); // Store email for OTP verification
+        console.log("OTP overlay is open:", true); // Log OTP overlay state
+        navigate("/newotp"); // Navigate to new OTP overlay
       }
     } catch (error) {
       Swal.fire(
         "Error",
-        error.response?.data?.message || "Invalid OTP. Please try again.",
+        error.response?.data?.message || "Failed to send OTP",
         "error"
       );
-      return false;
     }
   };
-  const handleBuyForMeOrder = async () => {
-    const requiredFields = ["email", "deliveryType"];
-    if (formState.deliveryType === "delivery") {
-      requiredFields.push("friendAddress", "landmarks", "travelMode");
+
+  const handleSubmitOrder = async () => {
+    if (!formState.number) {
+      toast.error("Please enter your contact number.");
+      return;
     }
-  
-    if (!validateFields(requiredFields) || !selectedProduct) return;
-  
+
     try {
-      const { data: otpData } = await axios.post(
-        "http://localhost:3001/api/otp/send",
-        { email: formState.email }
-      );
-  
-      if (otpData.message === "OTP sent to email successfully") {
-        Swal.fire({
-          title: "Enter OTP",
-          html: `<input type="text" id="otp-input" class="swal2-input" placeholder="Enter OTP">`,
-          showCancelButton: true,
-          confirmButtonText: "Verify",
-          preConfirm: async () => {
-            try {
-              const otp = document.getElementById("otp-input").value;
-              await handleOtpSubmit(otp, formState.email);
-  
-              const orderData = {
-                ...formState,
-                product: selectedProduct.title,
-                price: formState.sizePrice,
-              };
-  
-              // Changed endpoint to match backend route
-              const { data: orderResponse } = await axios.post(
-                "http://localhost:3001/api/orders",
-                orderData
-              );
-  
-              Swal.fire({
-                title: "Order Pending",
-                text: "Your order is waiting for confirmation!",
-                icon: "info",
-                timer: 5000
-              });
-  
-              const checkStatus = async (orderId) => {
-                try {
-                  const { data } = await axios.get(
-                    `http://localhost:3001/api/orders/${orderId}`
-                  );
-                  
-                  if (data.data.status === 'accepted') {
-                    Swal.fire("Success!", "Your order has been accepted!", "success");
-                    return true;
-                  }
-                  if (data.data.status === 'declined') {
-                    Swal.fire("Declined", "Your order was declined", "error");
-                    return true;
-                  }
-                  return false;
-                } catch (error) {
-                  console.error("Status check failed:", error);
-                  return false;
-                }
-              };
-  
-              // Start polling with 5 second intervals
-              const pollInterval = setInterval(async () => {
-                const resolved = await checkStatus(orderResponse.data._id);
-                if (resolved) clearInterval(pollInterval);
-              }, 5000);
-  
-            } catch (error) {
-              Swal.showValidationMessage(`Order failed: ${error.response?.data?.message || error.message}`);
-            }
-          }
-        });
+      const response = await axios.post("http://localhost:3001/api/send-otp", {
+        phoneNumber: formState.number,
+      });
+
+      if (response.data.success) {
+        setOtpForVerification(response.data.otp); // Store OTP for verification
+        toast.success("OTP sent successfully!");
+      } else {
+        toast.error("Failed to send OTP. Please try again.");
       }
     } catch (error) {
-      Swal.fire("Error", error.response?.data?.message || "Order failed", "error");
+      console.error("Error sending OTP:", error);
+      toast.error("Error sending OTP. Please try again.");
+    }
+  };
+
+  const handleOtpSubmit = async (otp, email) => {
+    try {
+      const response = await axios.post("http://localhost:3001/api/otp/verify", {
+        otp,
+        email,
+      });
+      if (response.data.success) {
+        toast.success("OTP verified successfully!");
+        console.log("OTP overlay is open:", false); // Log OTP overlay state
+        return true;
+      } else {
+        toast.error("Invalid OTP");
+        return false;
+      }
+    } catch (error) {
+      toast.error("OTP verification failed");
+      return false;
     }
   };
 
@@ -374,68 +374,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
         </RadioGroup>
       </FormControl>
     );
-    const handleBuyForFriendOrder = async () => {
-      const requiredFields = ["friendName", "friendNumber", "email"];
-      if (!validateFields(requiredFields) || !selectedProduct) return;
-    
-      try {
-        // First send OTP
-        const sendOtpResponse = await axios.post(
-          "http://localhost:3001/api/otp/send",
-          {
-            email: formState.email,
-          }
-        );
-    
-        if (sendOtpResponse.data.message === "OTP sent to email successfully") {
-          Swal.fire({
-            title: "Enter OTP",
-            html: `<input type="text" id="otp-input" class="swal2-input" placeholder="Enter OTP sent to ${formState.email}">`,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: "Verify OTP",
-            preConfirm: async () => {
-              const otp = document.getElementById("otp-input").value;
-              const verificationSuccess = await handleOtpSubmit(
-                otp,
-                formState.email
-              );
-    
-              if (verificationSuccess) {
-                // Submit the actual order after successful verification
-                const orderData = {
-                  ...formState,
-                  product: selectedProduct?.title,
-                  price: formState.sizePrice,
-                };
-    
-                // Send order to backend
-                await axios.post("http://localhost:3001/api/orders", orderData);
-    
-                Swal.fire({
-                  title: "Order Submitted",
-                  html: `
-                    <div>
-                      <p>Product: ${selectedProduct?.title}</p>
-                      <p>Price: ${orderData.price}Rs</p>
-                      <p>Friend's Name: ${orderData.friendName}</p>
-                      <p>Friend's Number: ${orderData.friendNumber}</p>
-                    </div>
-                  `,
-                  icon: "success",
-                });
-              }
-            },
-          });
-        }
-      } catch (error) {
-        Swal.fire(
-          "Error",
-          error.response?.data?.message || "Failed to send OTP",
-          "error"
-        );
-      }
-    };
+
   // Buy for Friend form
   const renderBuyForFriendForm = () => (
     <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
@@ -447,7 +386,7 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
       {renderFormField("Friend Number", "friendNumber", "tel")}
       {renderFormField("Price", "sizePrice")}
       {renderDeliveryOptions()}
-  
+
       {formState.deliveryType === "delivery" && (
         <>
           {renderFormField("Friend Address", "friendAddress")}
@@ -455,13 +394,12 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
           {renderTravelMode()}
         </>
       )}
-  
-      {/* Updated button to use new handler */}
+
       <Button
         fullWidth
         variant="contained"
         color="primary"
-        onClick={handleBuyForFriendOrder}
+        onClick={() => handleOrderSubmission(true)}
       >
         Submit Order
       </Button>
@@ -488,45 +426,46 @@ const AdvancedOrderForm = ({ closeOverlay }) => {
         Search User
       </Button>
 
-      {searchResult && (
-        <div>
-          <Typography variant="subtitle1" gutterBottom>
-            User Found: {searchResult.name} <br />
-            Email: ({searchResult.email}) <br />
-            Number: {searchResult.contactNumber} <br />
-          </Typography>
-          <br />
-          <Typography variant="h6" gutterBottom>
-            Delivery Options:
-          </Typography>
-          {renderDeliveryOptions()}
+      {
+  searchResult && (
+    <div>
+      <Typography variant="subtitle1" gutterBottom>
+        User Found: {searchResult.name} <br />
+        Email: ({searchResult.email}) <br />
+        Number: {searchResult.contactNumber} <br />
+      </Typography>
+      <br />
+      <Typography variant="h6" gutterBottom>
+        Delivery Options:
+      </Typography>
+      {renderDeliveryOptions()}
 
-          {formState.deliveryType === "delivery" && (
-            <>
-              {renderTravelMode()}
-              {renderFormField("Delivery Address", "friendAddress")}
-              {renderFormField("Landmark", "landmarks")}
-            </>
-          )}
-
-          {renderFormField("Price", "sizePrice")}
-
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            onClick={handleBuyForMeOrder}
-          >
-            Submit Order
-          </Button>
-        </div>
+      {formState.deliveryType === "delivery" && (
+        <>
+          {renderTravelMode()}
+          {renderFormField("Delivery Address", "friendAddress")}
+          {renderFormField("Landmark", "landmarks")}
+        </>
       )}
+
+      {renderFormField("Price", "sizePrice")}
+
+      <Button
+        fullWidth
+        variant="contained"
+        color="primary"
+        onClick={() => handleOrderSubmission(false)}
+      >
+        Submit Order
+      </Button>
+    </div>
+  )}
     </div>
   );
+
   return (
     <div>
-      <ToastContainer position="top-right" autoClose={1000} />
-
+      <ToastContainer position="top-left" autoClose={600} />
       <Card>
         <CardHeader
           action={
